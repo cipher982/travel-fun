@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>City Guide - {{ city }}</title>
+    <link href="{{ url_for('static', path='/styles.css') }}" rel="stylesheet">
+</head>
+<body>
+    <h1>City Guide for {{ city }}</h1>
+    
+    <h2>Top Landmarks:</h2>
+    <ul>
+        {% for landmark in landmarks %}
+        <li>{{ landmark }}</li>
+        {% endfor %}
+    </ul>
+    
+    <h2>Fun Activities:</h2>
+    <ul>
+        {% for activity in activities %}
+        <li>{{ activity }}</li>
+        {% endfor %}
+    </ul>
+    
+    <a href="/">Search Another City</a>
+</body>
+</html>
