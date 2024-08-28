@@ -9,19 +9,27 @@
 <body>
     <h1>City Guide for {{ city }}</h1>
     
-    <h2>Top Landmarks:</h2>
-    <ul>
-        {% for landmark in landmarks %}
-        <li>{{ landmark }}</li>
-        {% endfor %}
-    </ul>
+    {% if landmarks %}
+        <h2>Top Landmarks:</h2>
+        <ul>
+            {% for landmark in landmarks %}
+            <li>{{ landmark }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No landmarks found for this city.</p>
+    {% endif %}
     
-    <h2>Fun Activities:</h2>
-    <ul>
-        {% for activity in activities %}
-        <li>{{ activity }}</li>
-        {% endfor %}
-    </ul>
+    {% if activities %}
+        <h2>Fun Activities:</h2>
+        <ul>
+            {% for activity in activities %}
+            <li>{{ activity }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No activities found for this city.</p>
+    {% endif %}
     
     <a href="/">Search Another City</a>
 </body>

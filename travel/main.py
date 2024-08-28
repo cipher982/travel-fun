@@ -18,50 +18,53 @@ class CityInfo(BaseModel):
     landmarks: list[str]
     activities: list[str]
 
+
 @app.get("/")
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 @app.post("/")
 async def get_city_info(request: Request, city: str = Form(...)):
-    landmarks, activities = await get_city_info_from_ai(city)
+    city_info = await get_city_info_from_ai(city)
     return templates.TemplateResponse("result.html", {
         "request": request,
         "city": city,
-        "landmarks": landmarks,
-        "activities": activities
+        "landmarks": city_info.landmarks,
+        "activities": city_info.activities
     })
 
-async def get_city_info_from_ai(city: str) -> tuple[list[str], list[str]]:
-    prompt = f"Provide a list of top 5 landmarks and 5 fun activities in {city}. Format the response as two lists: 'Landmarks:' and 'Activities:'"
-    
-    client = openai.AsyncOpenAI()
-    response = await client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant that provides information about cities."},
-            {"role": "user", "content": prompt}
-        ]
-    )
-    
-    content = response.choices[0].message.content
-    landmarks, activities = parse_response(content)
-    return landmarks, activities
+async def get_city_info_from_ai(city: str) -> CityInfo:
+    try:
+        client = openai.AsyncOpenAI()
+        completion = await client.beta.chat.completions.parse(
+            model="gpt-4o-2024-08-06",
+            messages=[
+                {"role": "system", "content": "Provide information about landmarks and activities in the given city."},
+                {"role": "user", "content": f"Provide top 5 landmarks and 5 fun activities in {city}."},
+            ],
+            response_format=CityInfo,
+        )
+        
+        city_info = completion.choices[0].message.parsed
+        return city_info
+    except Exception as e:
+        print(f"Error getting city info: {e}")
+        return CityInfo(landmarks=[], activities=[])
 
 def parse_response(content: str) -> tuple[list[str], list[str]]:
-    lines = content.split('\n')
     landmarks = []
     activities = []
     current_list = None
-    
-    for line in lines:
-        if line.startswith("Landmarks:"):
+
+    for line in content.split('\n'):
+        line = line.strip()
+        if line.lower().startswith("landmarks:"):
             current_list = landmarks
-        elif line.startswith("Activities:"):
+        elif line.lower().startswith("activities:"):
             current_list = activities
-        elif line.strip().startswith("-") and current_list is not None:
-            current_list.append(line.strip()[2:])
-    
+        elif line.startswith(("1.", "2.", "3.", "4.", "5.")) and current_list is not None:
+            current_list.append(line[3:].strip())
+
     return landmarks, activities
 
 if __name__ == "__main__":
