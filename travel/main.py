@@ -37,7 +37,7 @@ async def get_city_info_from_ai(city: str) -> CityInfo:
     try:
         client = openai.AsyncOpenAI()
         completion = await client.beta.chat.completions.parse(
-            model="gpt-4o-2024-08-06",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "Provide information about landmarks and activities in the given city."},
                 {"role": "user", "content": f"Provide top 5 landmarks and 5 fun activities in {city}."},
