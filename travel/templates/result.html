@@ -5,15 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>City Guide - {{ city }}</title>
     <link href="{{ url_for('static', path='/styles.css') }}" rel="stylesheet">
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ gmap_api_key }}&callback=initMap" async defer></script>
+    <style>
+        #map {
+            height: 400px; /* Adjust height as needed */
+            width: 100%;
+        }
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
 </head>
 <body>
+{% extends "base.html" %}
+
+{% block title %}City Guide - {{ city }}{% endblock %}
+
+{% block head %}
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ gmap_api_key }}&callback=initMap" async defer></script>
+{% endblock %}
+
+{% block content %}
     <h1>City Guide for {{ city }}</h1>
     
     {% if landmarks %}
         <h2>Top Landmarks:</h2>
         <ul>
             {% for landmark in landmarks %}
-            <li>{{ landmark }}</li>
+            <li><a href="#" onclick="highlightPlace('{{ landmark }}')">{{ landmark }}</a></li>
             {% endfor %}
         </ul>
     {% else %}
@@ -21,16 +42,77 @@
     {% endif %}
     
     {% if activities %}
-        <h2>Fun Activities:</h2>
+        <h2>Top Activities:</h2>
         <ul>
             {% for activity in activities %}
-            <li>{{ activity }}</li>
+            <li><a href="#" onclick="highlightPlace('{{ restaurant }}')">{{ restaurant }}</a></li>
             {% endfor %}
         </ul>
     {% else %}
         <p>No activities found for this city.</p>
     {% endif %}
+
+    {% if restaurants %}
+    <h2 id="restaurants">Top Restaurants:</h2>
+    <ul>
+        {% for restaurant in restaurants %}
+        <li><a href="#" onclick="highlightPlace('{{ restaurant }}')">{{ restaurant }}</a></li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>No restaurants found for this city.</p>
+{% endif %}
+
+    
+    <div id="map"></div>
     
     <a href="/">Search Another City</a>
+
+    <script>
+        let map;
+        let service;
+        let infowindow;
+
+        function initMap() {
+            // Center the map at a default location
+            const center = { lat: -34.397, lng: 150.644 };
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: center,
+                zoom: 8,
+            });
+
+            infowindow = new google.maps.InfoWindow();
+            service = new google.maps.places.PlacesService(map);
+        }
+
+        function highlightPlace(placeName) {
+            const request = {
+                query: placeName,
+                fields: ['name', 'geometry'],
+            };
+
+            service.findPlaceFromQuery(request, function(results, status) {
+                if (status === google.maps.places.PlacesServiceStatus.OK) {
+                    for (let i = 0; i < results.length; i++) {
+                        createMarker(results[i]);
+                    }
+                    map.setCenter(results[0].geometry.location);
+                }
+            });
+        }
+
+        function createMarker(place) {
+            const marker = new google.maps.Marker({
+                map: map,
+                position: place.geometry.location,
+            });
+
+            google.maps.event.addListener(marker, 'click', function() {
+                infowindow.setContent(place.name);
+                infowindow.open(map, this);
+            });
+        }
+    </script>
+{% endblock %}
 </body>
 </html>

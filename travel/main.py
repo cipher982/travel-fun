@@ -17,7 +17,7 @@ openai.api_key = os.environ.get("OPENAI_API_KEY")
 class CityInfo(BaseModel):
     landmarks: list[str]
     activities: list[str]
-
+    restaurants: list[str]
 
 @app.get("/")
 async def index(request: Request):
@@ -26,11 +26,14 @@ async def index(request: Request):
 @app.post("/")
 async def get_city_info(request: Request, city: str = Form(...)):
     city_info = await get_city_info_from_ai(city)
+    gmap_api_key = os.getenv('GMAP_API_KEY')
     return templates.TemplateResponse("result.html", {
         "request": request,
         "city": city,
         "landmarks": city_info.landmarks,
-        "activities": city_info.activities
+        "activities": city_info.activities,
+        "restaurants": city_info.restaurants,
+        "gmap_api_key": gmap_api_key
     })
 
 async def get_city_info_from_ai(city: str) -> CityInfo:
@@ -39,8 +42,8 @@ async def get_city_info_from_ai(city: str) -> CityInfo:
         completion = await client.beta.chat.completions.parse(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "Provide information about landmarks and activities in the given city."},
-                {"role": "user", "content": f"Provide top 5 landmarks and 5 fun activities in {city}."},
+               {"role": "system", "content": "Provide information about landmarks, activities, and restaurants in the given city."},
+                {"role": "user", "content": f"Provide top 5 landmarks, 5 fun activities, and 5 top restaurants in {city}."},
             ],
             response_format=CityInfo,
         )
@@ -49,7 +52,7 @@ async def get_city_info_from_ai(city: str) -> CityInfo:
         return city_info
     except Exception as e:
         print(f"Error getting city info: {e}")
-        return CityInfo(landmarks=[], activities=[])
+        return CityInfo(landmarks=[], activities=[], restaurants=[])
 
 def parse_response(content: str) -> tuple[list[str], list[str]]:
     landmarks = []
