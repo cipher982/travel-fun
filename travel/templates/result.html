@@ -67,7 +67,7 @@
 {% endif %}
 
     
-    <div id="map"> style="height: 500px; width: 100%;"></div>
+<div id="map" style="height: 500px; width: 100%;"></div>
     
     <a href="/">Search Another City</a>
 
@@ -89,6 +89,10 @@
         }
 
         function highlightPlace(placeName) {
+            if (!service) {
+                console.error("Google Places Service is not initialized.");
+                return;
+            }
             const request = {
                 query: placeName,
                 fields: ['name', 'geometry'],
@@ -103,7 +107,6 @@
                 }
             });
         }
-
         function createMarker(place) {
             const marker = new google.maps.Marker({
                 map: map,
