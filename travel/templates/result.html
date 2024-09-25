@@ -1,74 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>City Guide - {{ city }}</title>
-    <link href="{{ url_for('static', path='/styles.css') }}" rel="stylesheet">
+    <title>City Guide</title>
+    <link href="/static/styles.css" rel="stylesheet">
+    <meta name="gmap-api-key" content="{{ gmap_api_key }}">
     <script>
-        console.log("Google Maps API Key: {{ gmap_api_key }}");
+        document.addEventListener("DOMContentLoaded", function () {
+            const gmapApiKey = document.querySelector('meta[name="gmap-api-key"]').getAttribute('content');
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${gmapApiKey}&callback=initMap`;
+            script.async = true;
+            script.defer = true;
+            document.head.appendChild(script);
+        });
     </script>
-    <script src="https://maps.googleapis.com/maps/api/js?key={{ gmap_api_key }}&callback=initMap" async defer></script>
     <style>
         #map {
-            height: 400px; /* Adjust height as needed */
+            height: 400px;
+            /* Adjust height as needed */
             width: 100%;
         }
-        html, body {
+
+        html,
+        body {
             height: 100%;
             margin: 0;
             padding: 0;
         }
     </style>
 </head>
+
 <body>
-{% extends "base.html" %}
+    <h1 id="city-title">City Guide</h1>
 
-{% block title %}City Guide - {{ city }}{% endblock %}
-
-{% block head %}
-    
-{% endblock %}
-
-{% block content %}
-    <h1>City Guide for {{ city }}</h1>
-    
-    {% if landmarks %}
+    <div id="landmarks-section">
         <h2>Top Landmarks:</h2>
-        <ul>
-            {% for landmark in landmarks %}
-            <li><a href="#" onclick="highlightPlace('{{ landmark }}')">{{ landmark }}</a></li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No landmarks found for this city.</p>
-    {% endif %}
-    
-    {% if activities %}
+        <ul id="landmarks-list"></ul>
+    </div>
+
+    <div id="activities-section">
         <h2>Top Activities:</h2>
-        <ul>
-            {% for activity in activities %}
-            <li><a href="#" onclick="highlightPlace('{{ activity }}')">{{ activity }}</a></li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No activities found for this city.</p>
-    {% endif %}
+        <ul id="activities-list"></ul>
+    </div>
 
-    {% if restaurants %}
-    <h2 id="restaurants">Top Restaurants:</h2>
-    <ul>
-        {% for restaurant in restaurants %}
-        <li><a href="#" onclick="highlightPlace('{{ restaurant }}')">{{ restaurant }}</a></li>
-        {% endfor %}
-    </ul>
-{% else %}
-    <p>No restaurants found for this city.</p>
-{% endif %}
+    <div id="restaurants-section">
+        <h2>Top Restaurants:</h2>
+        <ul id="restaurants-list"></ul>
+    </div>
 
-    
-<div id="map" style="height: 500px; width: 100%;"></div>
-    
+    <div id="map" style="height: 500px; width: 100%;"></div>
+
     <a href="/">Search Another City</a>
 
     <script>
@@ -76,9 +60,48 @@
         let service;
         let infowindow;
 
-        function initMap() {
-                        // Center the map at a default location
-            const center = { lat: {{ coordinates.lat|safe }}, lng: {{ coordinates.lng|safe }} };
+        document.addEventListener("DOMContentLoaded", function () {
+            const city = new URLSearchParams(window.location.search).get('city');
+            fetch(`/city-info`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({ city: city })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('city-title').textContent = `City Guide for ${data.city}`;
+                    populateList('landmarks-list', data.landmarks, 'name', 'image');
+                    populateList('activities-list', data.activities);
+                    populateList('restaurants-list', data.restaurants);
+                    initMap(data.coordinates.lat, data.coordinates.lng, data.restaurants);
+                });
+        });
+
+        function populateList(elementId, items, nameKey = null, imageKey = null) {
+            const list = document.getElementById(elementId);
+            list.innerHTML = '';
+            items.forEach(item => {
+                const listItem = document.createElement('li');
+                if (nameKey) {
+                    listItem.innerHTML = `<a href="#" onclick="highlightPlace('${item[nameKey]}')">${item[nameKey]}</a>`;
+                    if (imageKey && item[imageKey]) {
+                        listItem.innerHTML += `<img src="${item[imageKey]}" alt="${item[nameKey]}" style="width:100px;height:auto;">`;
+                    }
+                } else {
+                    listItem.innerHTML = `<a href="#" onclick="highlightPlace('${item}')">${item}</a>`;
+                }
+                list.appendChild(listItem);
+            });
+        }
+
+        function initMap(lat, lng, restaurants) {
+            if (!lat || !lng) {
+                console.error("Invalid coordinates:", lat, lng);
+                return;
+            }
+            const center = { lat: lat, lng: lng };
             map = new google.maps.Map(document.getElementById("map"), {
                 center: center,
                 zoom: 8,
@@ -86,9 +109,13 @@
 
             infowindow = new google.maps.InfoWindow();
             service = new google.maps.places.PlacesService(map);
+
+            restaurants.forEach(restaurant => {
+                highlightPlace(restaurant, true);
+            });
         }
 
-        function highlightPlace(placeName) {
+        function highlightPlace(placeName, init = false) {
             if (!service) {
                 console.error("Google Places Service is not initialized.");
                 return;
@@ -98,27 +125,30 @@
                 fields: ['name', 'geometry'],
             };
 
-            service.findPlaceFromQuery(request, function(results, status) {
+            service.findPlaceFromQuery(request, function (results, status) {
                 if (status === google.maps.places.PlacesServiceStatus.OK) {
                     for (let i = 0; i < results.length; i++) {
                         createMarker(results[i]);
                     }
-                    map.setCenter(results[0].geometry.location);
+                    if (!init) {
+                        map.setCenter(results[0].geometry.location);
+                    }
                 }
             });
         }
+
         function createMarker(place) {
             const marker = new google.maps.Marker({
                 map: map,
                 position: place.geometry.location,
             });
 
-            google.maps.event.addListener(marker, 'click', function() {
+            google.maps.event.addListener(marker, 'click', function () {
                 infowindow.setContent(place.name);
                 infowindow.open(map, this);
             });
         }
     </script>
-{% endblock %}
 </body>
+
 </html>

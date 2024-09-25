@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}City Guide{% endblock %}</title>
-    <link href="{{ url_for('static', path='/styles.css') }}" rel="stylesheet">
+    <title>City Guide</title>
+    <link href="/static/styles.css" rel="stylesheet">
     <style>
         #map {
             height: 400px; /* Adjust height as needed */
@@ -36,17 +36,18 @@
             font-size: 1.5em;
         }
     </style>
-    {% block head %}{% endblock %}
 </head>
 <body>
     <div class="sticky-nav">
-            <a href="#" class="brand">Atlas</a>
+        <a href="#" class="brand">Atlas</a>
         <div>
-        <a href="#landmarks">Landmarks</a>
-        <a href="#activities">Activities</a>
-        <a href="#restaurants">Restaurants</a>
+            <a href="#landmarks">Landmarks</a>
+            <a href="#activities">Activities</a>
+            <a href="#restaurants">Restaurants</a>
         </div>
     </div>
-    {% block content %}{% endblock %}
+    <div id="content">
+        <!-- Content will be dynamically inserted here -->
+    </div>
 </body>
 </html>
