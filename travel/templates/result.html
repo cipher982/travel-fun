@@ -1,59 +1,174 @@
 <!DOCTYPE html>
 <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>City Guide</title>
+        <link href="/static/styles.css" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
+        <style>
+            body {
+                font-family: 'Lato', sans-serif;
+                color: #333;
+                line-height: 1.4;
+                margin: 0;
+            }
+    
+            .background {
+                background: url('static/Images/world_dots.png') repeat-x center center fixed;
+                background-size: cover;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                opacity: 20%;
+                z-index: -1;
+                animation: moveBackground 30s linear infinite;
+            }
+    
+            @keyframes moveBackground {
+                from {
+                    background-position: 0 0;
+                }
+                to {
+                    background-position: 100% 0;
+                }
+            }
+    
+            .navbar {
+                position: sticky;
+                top: 0;
+                background-color: #f8f2f2;
+                padding: 10px;
+                display: flex;
+                align-items: center;
+                z-index: 1001;
+            }
+    
+            .navbar a {
+                color: #426B1F;
+                padding: 10px 12px;
+                text-decoration: none;
+                font-family: 'Lato', sans-serif;
+            }
+    
+            .navbar a:hover {
+                background-color: #ddd;
+                color: black;
+            }
+    
+            .navbar .brand {
+                font-size: 1.2em;
+                margin-right: auto;
+            }
+    
+            h1, h2 {
+                text-align: center;
+                color: #2c3e50;
+                margin: 10px 0;
+            }
+    
+            #content {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr); /* Three equal columns */
+                gap: 20px; /* Space between columns */
+                padding: 20px;
+                width: 100%;
+                box-sizing: border-box;
+            }
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>City Guide</title>
-    <link href="/static/styles.css" rel="stylesheet">
-    <meta name="gmap-api-key" content="{{ gmap_api_key }}">
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const gmapApiKey = document.querySelector('meta[name="gmap-api-key"]').getAttribute('content');
-            const script = document.createElement('script');
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${gmapApiKey}&callback=initMap`;
-            script.async = true;
-            script.defer = true;
-            document.head.appendChild(script);
-        });
-    </script>
-    <style>
-        #map {
-            height: 400px;
-            /* Adjust height as needed */
-            width: 100%;
-        }
+            #sections-container {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr); /* Three equal columns */
+                gap: 20px; /* Space between columns */
+            }
+            
+            .section {
+                box-sizing: border-box;
+                min-width: 100px; /* Ensure sections have a minimum width */
+            }
 
-        html,
-        body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-        }
-    </style>
-</head>
+            /* Ensure the map takes full width */
+            #map {
+                width: 100%;
+                height: 500px;
+                margin-top: 10px;
+                border-radius: 10px;
+                overflow: hidden;
+            }
 
+            ul {
+                list-style-type: none;
+                padding: 0;
+                margin: 0;
+                max-height: 300px;
+                overflow-y: auto;
+            }
+    
+            li {
+                margin: 2px 0;
+                padding: 5px;
+                background-color: #f4f4f4;
+                border-radius: 5px;
+                transition: background-color 0.3s;
+            }
+    
+            li:hover {
+                background-color: #e2e2e2;
+            }
+    
+            a {
+                text-decoration: none;
+                color: #3498db;
+            }
+    
+            a:hover {
+                color: #2980b9;
+            }
+    
+            #map {
+                margin-top: 10px;
+                border-radius: 10px;
+                overflow: hidden;
+            }
+        </style>
+        <script async defer
+            src="https://maps.googleapis.com/maps/api/js?key={{ gmap_api_key }}&libraries=places">
+        </script>
+    </head>
 <body>
-    <h1 id="city-title">City Guide</h1>
-
-    <div id="landmarks-section">
-        <h2>Top Landmarks:</h2>
-        <ul id="landmarks-list"></ul>
+    <div class="background"></div>
+    <div class="navbar">
+        <a href="/" class="brand">Atlas</a>
     </div>
 
-    <div id="activities-section">
-        <h2>Top Activities:</h2>
-        <ul id="activities-list"></ul>
+    <div id="loading-overlay" style="display: flex; justify-content: center; align-items: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.8); z-index: 1000;">
+        <h2>Loading...</h2>
     </div>
 
-    <div id="restaurants-section">
-        <h2>Top Restaurants:</h2>
-        <ul id="restaurants-list"></ul>
+    <div id="content" style="display: none;">
+        <h1 id="city-title">City Guide</h1>
+
+        <div id="sections-container">
+            <div id="landmarks-section" class="section">
+                <h2>Top Landmarks:</h2>
+                <ul id="landmarks-list"></ul>
+            </div>
+
+            <div id="activities-section" class="section">
+                <h2>Top Activities:</h2>
+                <ul id="activities-list"></ul>
+            </div>
+
+            <div id="restaurants-section" class="section">
+                <h2>Top Restaurants:</h2>
+                <ul id="restaurants-list"></ul>
+            </div>
+        </div>
+
+        <div id="map" style="height: 500px; width: 100%;"></div>
     </div>
-
-    <div id="map" style="height: 500px; width: 100%;"></div>
-
-    <a href="/">Search Another City</a>
 
     <script>
         let map;
@@ -61,6 +176,8 @@
         let infowindow;
 
         document.addEventListener("DOMContentLoaded", function () {
+            document.getElementById('loading-overlay').style.display = 'flex'; // Show loading indicator
+
             const city = new URLSearchParams(window.location.search).get('city');
             fetch(`/city-info`, {
                 method: 'POST',
@@ -76,6 +193,20 @@
                     populateList('activities-list', data.activities);
                     populateList('restaurants-list', data.restaurants);
                     initMap(data.coordinates.lat, data.coordinates.lng, data.restaurants);
+                    
+                    // Hide loading overlay and show content
+                    document.getElementById('loading-overlay').style.display = 'none';
+                    document.getElementById('content').style.display = 'block';
+
+                    document.querySelector('.background').style.animation = 'none';
+                    document.querySelector('.background').style.opacity = '5%'; // Reset opacity
+  
+                    console.log("City Info:", data);
+                })
+                .catch(error => {
+                    console.error("Error fetching city info:", error);
+                    // Optionally hide the loading overlay in case of an error
+                    document.getElementById('loading-overlay').style.display = 'none';
                 });
         });
 
@@ -87,7 +218,7 @@
                 if (nameKey) {
                     listItem.innerHTML = `<a href="#" onclick="highlightPlace('${item[nameKey]}')">${item[nameKey]}</a>`;
                     if (imageKey && item[imageKey]) {
-                        listItem.innerHTML += `<img src="${item[imageKey]}" alt="${item[nameKey]}" style="width:100px;height:auto;">`;
+                        listItem.innerHTML += `<img src="${item[imageKey]}" alt="${item[nameKey]}" style="width:50px;height:auto;">`; // Adjusted size
                     }
                 } else {
                     listItem.innerHTML = `<a href="#" onclick="highlightPlace('${item}')">${item}</a>`;
@@ -150,5 +281,4 @@
         }
     </script>
 </body>
-
 </html>
